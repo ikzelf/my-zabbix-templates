@@ -1,0 +1,434 @@
+<?xml version="1.0" ?>
+<zabbix_export>
+	<version>5.0</version>
+	<date>2016-01-01T01:01:01Z</date>
+	<groups>
+		<group>
+			<name>platform</name>
+		</group>
+		<group>
+			<name>Templates/Applications</name>
+		</group>
+	</groups>
+	<templates>
+		<template>
+			<template>Template App Apache Tomcat JMX</template>
+			<name>Template App Apache Tomcat JMX</name>
+			<description>Getest op tomcat-7</description>
+			<groups>
+				<group>
+					<name>platform</name>
+				</group>
+				<group>
+					<name>Templates/Applications</name>
+				</group>
+			</groups>
+			<applications>
+				<application>
+					<name>Sessions</name>
+				</application>
+				<application>
+					<name>tc-GlobalRequestProcessor</name>
+				</application>
+				<application>
+					<name>tc-proto</name>
+				</application>
+				<application>
+					<name>tc-protocolHandler</name>
+				</application>
+				<application>
+					<name>tc-proto RequestProcessor</name>
+				</application>
+				<application>
+					<name>tc-proto threadpool</name>
+				</application>
+				<application>
+					<name>tc-sessions</name>
+				</application>
+				<application>
+					<name>Tomcat</name>
+				</application>
+			</applications>
+			<items>
+				<item>
+					<name>Tomcat version</name>
+					<type>JMX</type>
+					<key>jmx[&quot;Catalina:type=Server&quot;,serverInfo]</key>
+					<delay>1h</delay>
+					<history>1w</history>
+					<trends>0</trends>
+					<value_type>CHAR</value_type>
+					<applications>
+						<application>
+							<name>Tomcat</name>
+						</application>
+					</applications>
+					<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+				</item>
+			</items>
+			<discovery_rules>
+				<discovery_rule>
+					<name>protocol handler.lld</name>
+					<type>JMX</type>
+					<key>jmx.discovery[beans,&quot;Catalina:type=ProtocolHandler,*&quot;]</key>
+					<delay>1h</delay>
+					<lifetime>0</lifetime>
+					<item_prototypes>
+						<item_prototype>
+							<name>name {#JMXOBJ}</name>
+							<type>JMX</type>
+							<key>jmx[{#JMXOBJ},name]</key>
+							<delay>1h</delay>
+							<history>30d</history>
+							<trends>0</trends>
+							<value_type>CHAR</value_type>
+							<applications>
+								<application>
+									<name>tc-protocolHandler</name>
+								</application>
+							</applications>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+					</item_prototypes>
+					<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+				</discovery_rule>
+				<discovery_rule>
+					<name>GlobalRequestProcessor.lld</name>
+					<type>JMX</type>
+					<key>jmx.get[beans,&quot;Catalina:type=GlobalRequestProcessor,*&quot;]</key>
+					<delay>1h</delay>
+					<item_prototypes>
+						<item_prototype>
+							<name>GRP {#GPNAME} bytesReceived</name>
+							<type>JMX</type>
+							<key>jmx[{#GPOBJ},bytesReceived]</key>
+							<history>7d</history>
+							<units>B</units>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-GlobalRequestProcessor {#GPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>GRP {#GPNAME} bytesSent</name>
+							<type>JMX</type>
+							<key>jmx[{#GPOBJ},bytesSent]</key>
+							<history>7d</history>
+							<units>B</units>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-GlobalRequestProcessor {#GPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>GRP {#GPNAME} requestCount</name>
+							<type>JMX</type>
+							<key>jmx[{#GPOBJ},requestCount]</key>
+							<history>7d</history>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-GlobalRequestProcessor {#GPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+					</item_prototypes>
+					<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+					<lld_macro_paths>
+						<lld_macro_path>
+							<lld_macro>{#GPNAME}</lld_macro>
+							<path>$.properties['name']</path>
+						</lld_macro_path>
+						<lld_macro_path>
+							<lld_macro>{#GPOBJ}</lld_macro>
+							<path>$.object</path>
+						</lld_macro_path>
+					</lld_macro_paths>
+				</discovery_rule>
+				<discovery_rule>
+					<name>manager.lld</name>
+					<type>JMX</type>
+					<key>jmx.get[beans,&quot;Catalina:type=Manager,*&quot;]</key>
+					<delay>1h</delay>
+					<lifetime>0</lifetime>
+					<item_prototypes>
+						<item_prototype>
+							<name>{#MGRCONTEXT} activeSessions</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},activeSessions]</key>
+							<history>7d</history>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+								<application_prototype>
+									<name>tc-{#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} maxActiveSessions</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},maxActiveSessions]</key>
+							<delay>1h</delay>
+							<history>7d</history>
+							<value_type>FLOAT</value_type>
+							<description>-1 -&gt; geen limit</description>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} maxActive</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},maxActive]</key>
+							<delay>1h</delay>
+							<history>7d</history>
+							<description>max sessions since startup</description>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} maxInactiveInterval</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},maxInactiveInterval]</key>
+							<delay>1h</delay>
+							<history>7d</history>
+							<value_type>FLOAT</value_type>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} processingTime</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},processingTime]</key>
+							<delay>5m</delay>
+							<history>7d</history>
+							<units>s</units>
+							<description>time spent housekeeping</description>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} rejectedSessions</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},rejectedSessions]</key>
+							<delay>5m</delay>
+							<history>7d</history>
+							<description>rejected sessions because of reaching maxActiveSessions</description>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} sessionAverageAliveTime</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},sessionAverageAliveTime]</key>
+							<delay>5m</delay>
+							<history>7d</history>
+							<units>s</units>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} sessionCreateRate</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},sessionCreateRate]</key>
+							<delay>5m</delay>
+							<history>7d</history>
+							<description>sessions created per minute</description>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} sessionExpireRate</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},sessionExpireRate]</key>
+							<delay>5m</delay>
+							<history>7d</history>
+							<description>sessions expired per minute</description>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#MGRCONTEXT} sessionMaxAliveTime</name>
+							<type>JMX</type>
+							<key>jmx[{#MGROBJ},sessionMaxAliveTime]</key>
+							<delay>1h</delay>
+							<history>7d</history>
+							<units>s</units>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-manager {#MGRCONTEXT}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+					</item_prototypes>
+					<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+					<lld_macro_paths>
+						<lld_macro_path>
+							<lld_macro>{#MGROBJ}</lld_macro>
+							<path>$.object</path>
+						</lld_macro_path>
+						<lld_macro_path>
+							<lld_macro>{#MGRCONTEXT}</lld_macro>
+							<path>$.properties['context']</path>
+						</lld_macro_path>
+					</lld_macro_paths>
+				</discovery_rule>
+				<discovery_rule>
+					<name>threadpool lld</name>
+					<type>JMX</type>
+					<key>jmx.get[beans,&quot;Catalina:type=ThreadPool,*&quot;]</key>
+					<delay>1h</delay>
+					<lifetime>0</lifetime>
+					<item_prototypes>
+						<item_prototype>
+							<name>{#THREADPNAME} connectionCount</name>
+							<type>JMX</type>
+							<key>jmx[{#THREADPOBJ},connectionCount]</key>
+							<history>7d</history>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-threadpool {#THREADPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#THREADPNAME} currentThreadCount</name>
+							<type>JMX</type>
+							<key>jmx[{#THREADPOBJ},currentThreadCount]</key>
+							<history>7d</history>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-threadpool {#THREADPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#THREADPNAME} currentThreadsBusy</name>
+							<type>JMX</type>
+							<key>jmx[{#THREADPOBJ},currentThreadsBusy]</key>
+							<history>7d</history>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-threadpool {#THREADPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#THREADPNAME} maxConnections</name>
+							<type>JMX</type>
+							<key>jmx[{#THREADPOBJ},maxConnections]</key>
+							<delay>1h</delay>
+							<history>7d</history>
+							<value_type>FLOAT</value_type>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-threadpool {#THREADPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>{#THREADPNAME} maxThreads</name>
+							<type>JMX</type>
+							<key>jmx[{#THREADPOBJ},maxThreads]</key>
+							<delay>1h</delay>
+							<history>7d</history>
+							<value_type>FLOAT</value_type>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-threadpool {#THREADPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+						<item_prototype>
+							<name>threadpool {#THREADPNAME}</name>
+							<type>JMX</type>
+							<key>jmx[{#THREADPOBJ},name]</key>
+							<delay>1d</delay>
+							<trends>0</trends>
+							<value_type>CHAR</value_type>
+							<application_prototypes>
+								<application_prototype>
+									<name>tc-threadpool {#THREADPNAME}</name>
+								</application_prototype>
+							</application_prototypes>
+							<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+						</item_prototype>
+					</item_prototypes>
+					<jmx_endpoint>service:jmx:rmi:///jndi/rmi://{HOST.CONN}:{HOST.PORT}/jmxrmi</jmx_endpoint>
+					<lld_macro_paths>
+						<lld_macro_path>
+							<lld_macro>{#THREADPOBJ}</lld_macro>
+							<path>$.object</path>
+						</lld_macro_path>
+						<lld_macro_path>
+							<lld_macro>{#THREADPNAME}</lld_macro>
+							<path>$.properties['name']</path>
+						</lld_macro_path>
+					</lld_macro_paths>
+				</discovery_rule>
+			</discovery_rules>
+			<macros>
+				<macro>
+					<macro>{$PROTOCOL_HANDLER_AJP}</macro>
+					<value>ajp-nio-8009</value>
+				</macro>
+				<macro>
+					<macro>{$PROTOCOL_HANDLER_HTTP}</macro>
+					<value>http-nio-8080</value>
+				</macro>
+				<macro>
+					<macro>{$PROTOCOL_HANDLER_HTTPS}</macro>
+					<value>https-openssl-nio-8443</value>
+				</macro>
+				<macro>
+					<macro>{$TOMCAT_PROTOCOL_HANDLER}</macro>
+					<value>http-bio-8080</value>
+				</macro>
+			</macros>
+		</template>
+	</templates>
+</zabbix_export>
