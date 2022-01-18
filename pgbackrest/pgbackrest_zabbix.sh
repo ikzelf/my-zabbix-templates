@@ -1,22 +1,36 @@
 #!/usr/bin/env bash
 
-type zabbix_sender >/dev/null 2>&1
-if [ $? -ne 0 ]
-then
-    echo "zabbix_sender not in PATH"
-    echo "is zabbix_sender installed?"
+function missing_tool()
+{
+    {
+    echo "$1" not in PATH
+    echo is "$1" installed, if not, first install "$1"
+    } >&2
     exit 1
-fi >&2
+}
+
+# type pgbackrest >/dev/null 2>&1    || missing_tool pgbackrest
+type jq >/dev/null 2>&1            || missing_tool jq
+type zabbix_sender >/dev/null 2>&1 || missing_tool zabbix_sender
+
+DEBUG=""
+if [ "$1" = "-d" ]
+then
+    DEBUG="echo"
+fi
 
 date
 NOW=$(date +%s)
 export NOW
 pgbackrest info --output json |
-   jq -r 'map([ .backup[] + {name} ]
-         | max_by(.timestamp.stop))
+  jq 'map(.archive[] + .backup[] + {name}) | group_by([.name, .type]) | map(max_by(.timestamp.stop))
 ' | jq --arg NOW "$NOW" -r 'map(.timestamp.age = ($NOW|tonumber) - .timestamp.stop)
 ' |
         tr "\n" " " |
         sed "s/^/- pgbackrest.json /" |    #### add hostname + itemkey. hostname - is taken from config
-        zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -i -
-
+        if [ "$DEBUG" ]
+        then
+            cat
+        else
+            zabbix_sender -c /etc/zabbix/zabbix_agentd.conf -i -
+        fi
