@@ -22,11 +22,19 @@ fi
 date
 NOW=$(date +%s)
 export NOW
-pgbackrest info --output json |
-  jq 'map(.archive[] + .backup[] + {name}) | group_by([.name, .type]) | map(max_by(.timestamp.stop))
+ls /etc/pgbackrest/*.conf |
+    while read toplevel
+    do
+        echo "toplevel: $toplevel" >&2
+        pgbackrest info --output json --config "$toplevel"
+    done |
+    jq -n '[inputs|.[]]' | # add all arrays from the info commands
+  jq 'map(.archive[] + .backup[] + {name}) 
+    | group_by([.name, .type]) 
+    | map(max_by(.timestamp.stop))
 ' | jq --arg NOW "$NOW" -r 'map(.timestamp.age = ($NOW|tonumber) - .timestamp.stop)
 ' |
-        tr "\n" " " |
+        tr "\n" " " |                      # key and value, the value being 1 line
         sed "s/^/- pgbackrest.json /" |    #### add hostname + itemkey. hostname - is taken from config
         if [ "$DEBUG" ]
         then
