@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2022-01-18T16:35:30Z</date>
+    <date>2022-01-21T14:15:40Z</date>
     <groups>
         <group>
-            <name>rdbms/postgres</name>
-        </group>
-        <group>
-            <name>Templates/SSCI</name>
+            <name>Templates</name>
         </group>
     </groups>
     <templates>
         <template>
             <template>postgres pgbackrest backup server</template>
             <name>postgres pgbackrest backup server</name>
-            <description>monitoring of pgbackrest backups. Data is sent using zabbix_sender and preformatted using jq</description>
+            <description>monitoring of pgbackrest backups. Data is sent using zabbix_sender and preformatted using jq&#13;
+crontab of the pgbackrest user on the repo host[s]:&#13;
+15 *  * * * $HOME/bin/pgbackrest_zabbix.sh &gt;&gt;/var/log/pgbackrest/pgbackrest_zabbix.sh.log 2&gt;&amp;1</description>
             <groups>
                 <group>
-                    <name>rdbms/postgres</name>
-                </group>
-                <group>
-                    <name>Templates/SSCI</name>
+                    <name>Templates</name>
                 </group>
             </groups>
             <applications>
@@ -30,6 +26,21 @@
             </applications>
             <items>
                 <item>
+                    <name>pgbackrest.data</name>
+                    <type>TRAP</type>
+                    <key>pgbackrest.data</key>
+                    <delay>0</delay>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <description>The data where the items depend on</description>
+                    <applications>
+                        <application>
+                            <name>backup</name>
+                        </application>
+                    </applications>
+                </item>
+                <item>
                     <name>pgbackrest.json</name>
                     <type>TRAP</type>
                     <key>pgbackrest.json</key>
@@ -37,7 +48,8 @@
                     <history>0</history>
                     <trends>0</trends>
                     <value_type>TEXT</value_type>
-                    <description>get latest backup info from pgbackrest info --output=json with some smart filtering in jq to only get the latest backup per database per type</description>
+                    <description>only for lld, contains list of names and type&#13;
+The lld rule depends on this</description>
                     <applications>
                         <application>
                             <name>backup</name>
@@ -70,6 +82,16 @@
                         <key>pgbackrest.json</key>
                     </master_item>
                 </item>
+                <item>
+                    <name>test.json</name>
+                    <type>TRAP</type>
+                    <key>test.json</key>
+                    <delay>0</delay>
+                    <history>1h</history>
+                    <trends>0</trends>
+                    <status>DISABLED</status>
+                    <value_type>TEXT</value_type>
+                </item>
             </items>
             <discovery_rules>
                 <discovery_rule>
@@ -79,9 +101,9 @@
                     <delay>0</delay>
                     <item_prototypes>
                         <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},age]</name>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},age]</name>
                             <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},age]</key>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},age]</key>
                             <delay>0</delay>
                             <history>8d</history>
                             <units>s</units>
@@ -94,23 +116,23 @@
                             <preprocessing>
                                 <step>
                                     <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].timestamp.age.first()</params>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].timestamp.age.first()</params>
                                     <error_handler>DISCARD_VALUE</error_handler>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>pgbackrest.json</key>
+                                <key>pgbackrest.data</key>
                             </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
                                     <expression>{last()} &gt; {$MAX_BKUP_AGE:&quot;{#TYPE}&quot;}</expression>
-                                    <name>last {#TYPE} backup of {#NAME} older than {$MAX_BKUP_AGE:&quot;{#TYPE}&quot;}</name>
+                                    <name>last {#TYPE} backup of {#TENANT}, {#NAME} older than {$MAX_BKUP_AGE:&quot;{#TYPE}&quot;}</name>
                                     <priority>WARNING</priority>
                                     <description>expecting a regular pattern</description>
                                     <dependencies>
                                         <dependency>
-                                            <name>no monitoring data for {#NAME}-{#TYPE}</name>
-                                            <expression>{postgres pgbackrest backup server:pgbackrest[{#NAME},{#TYPE},age].nodata(4h)}=1</expression>
+                                            <name>no monitoring data for {#TENANT}, {#NAME}-{#TYPE}</name>
+                                            <expression>{postgres pgbackrest backup server:pgbackrest[{#TENANT},{#NAME},{#TYPE},age].nodata(4h)}=1</expression>
                                         </dependency>
                                     </dependencies>
                                     <tags>
@@ -122,7 +144,7 @@
                                 </trigger_prototype>
                                 <trigger_prototype>
                                     <expression>{nodata(4h)}=1</expression>
-                                    <name>no monitoring data for {#NAME}-{#TYPE}</name>
+                                    <name>no monitoring data for {#TENANT}, {#NAME}-{#TYPE}</name>
                                     <priority>AVERAGE</priority>
                                     <description>age is always new and should always be received. Could be a monitoring script problem.</description>
                                     <tags>
@@ -138,9 +160,241 @@
                             </trigger_prototypes>
                         </item_prototype>
                         <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},arl,max]</name>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,delta]</name>
                             <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},arl,max]</key>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,delta]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <units>B</units>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.delta.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,size]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,size]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <units>B</units>
+                            <description>dbsize as it runs</description>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.size.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,delta]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,delta]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <units>B</units>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.repository.delta.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,size]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,size]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <units>B</units>
+                            <description>size of db in the repository</description>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.repository.size.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},start]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},start]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <units>unixtime</units>
+                            <description>The time this backup started</description>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].timestamp.start.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},status]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},status]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <valuemap>
+                                <name>pgbackrest_status</name>
+                            </valuemap>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].error.first()</params>
+                                </step>
+                                <step>
+                                    <type>STR_REPLACE</type>
+                                    <params>false
+0</params>
+                                </step>
+                                <step>
+                                    <type>STR_REPLACE</type>
+                                    <params>true
+1</params>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},stop]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},stop]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <units>unixtime</units>
+                            <description>The time this backup ended</description>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].timestamp.stop.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},version]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},version]</key>
+                            <delay>0</delay>
+                            <history>8d</history>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <description>version of pgbackrest used for this backup</description>
+                            <applications>
+                                <application>
+                                    <name>backup</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].backrest.version.first()</params>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                                    <params>1d</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pgbackrest.data</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,max]</name>
+                            <type>DEPENDENT</type>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,max]</key>
                             <delay>0</delay>
                             <history>15d</history>
                             <trends>0</trends>
@@ -155,7 +409,7 @@
                             <preprocessing>
                                 <step>
                                     <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].max.first()</params>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].max.first()</params>
                                 </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED</type>
@@ -163,20 +417,20 @@
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>pgbackrest.json</key>
+                                <key>pgbackrest.data</key>
                             </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
                                     <expression>{nodata({$ARCHIVER_LATE})}=1</expression>
-                                    <name>no archives received for {#NAME} - {#TYPE}</name>
+                                    <name>no archives received for {#TENANT}, {#NAME} - {#TYPE}</name>
                                     <status>DISABLED</status>
                                     <priority>WARNING</priority>
                                     <description>archives are for all backuptypes so check only full,arl,max&#13;
 the arl items are disabled and only enabled for full,arl,(min|max)</description>
                                     <dependencies>
                                         <dependency>
-                                            <name>no monitoring data for {#NAME}-{#TYPE}</name>
-                                            <expression>{postgres pgbackrest backup server:pgbackrest[{#NAME},{#TYPE},age].nodata(4h)}=1</expression>
+                                            <name>no monitoring data for {#TENANT}, {#NAME}-{#TYPE}</name>
+                                            <expression>{postgres pgbackrest backup server:pgbackrest[{#TENANT},{#NAME},{#TYPE},age].nodata(4h)}=1</expression>
                                         </dependency>
                                     </dependencies>
                                     <tags>
@@ -192,9 +446,9 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                             </trigger_prototypes>
                         </item_prototype>
                         <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},arl,min]</name>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,min]</name>
                             <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},arl,min]</key>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,min]</key>
                             <delay>0</delay>
                             <history>15d</history>
                             <trends>0</trends>
@@ -209,7 +463,7 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                             <preprocessing>
                                 <step>
                                     <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].min.first()</params>
+                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].min.first()</params>
                                 </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED</type>
@@ -217,213 +471,19 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                                 </step>
                             </preprocessing>
                             <master_item>
-                                <key>pgbackrest.json</key>
+                                <key>pgbackrest.data</key>
                             </master_item>
                         </item_prototype>
                         <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},db,delta]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},db,delta]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <units>B</units>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].info.delta.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},db,size]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},db,size]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <units>B</units>
-                            <description>dbsize as it runs</description>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].info.size.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},repo,delta]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},repo,delta]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <units>B</units>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].info.repository.delta.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},repo,size]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},repo,size]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <units>B</units>
-                            <description>size of db in the repository</description>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].info.repository.size.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},start]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},start]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <units>unixtime</units>
-                            <description>The time this backup started</description>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].timestamp.start.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},stop]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},stop]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <units>unixtime</units>
-                            <description>The time this backup ended</description>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].timestamp.stop.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},version]</name>
-                            <type>DEPENDENT</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},version]</key>
-                            <delay>0</delay>
-                            <history>8d</history>
-                            <trends>0</trends>
-                            <value_type>CHAR</value_type>
-                            <description>version of pgbackrest used for this backup</description>
-                            <applications>
-                                <application>
-                                    <name>backup</name>
-                                </application>
-                            </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot;)].backrest.version.first()</params>
-                                </step>
-                                <step>
-                                    <type>DISCARD_UNCHANGED_HEARTBEAT</type>
-                                    <params>1d</params>
-                                </step>
-                            </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.json</key>
-                            </master_item>
-                        </item_prototype>
-                        <item_prototype>
-                            <name>pgbackrest[{#NAME},{#TYPE},wspeed]</name>
+                            <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},wspeed]</name>
                             <type>CALCULATED</type>
-                            <key>pgbackrest[{#NAME},{#TYPE},wspeed]</key>
-                            <delay>10m</delay>
+                            <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},wspeed]</key>
+                            <delay>1h</delay>
                             <history>8d</history>
                             <value_type>FLOAT</value_type>
                             <units>Bps</units>
-                            <params>last(&quot;pgbackrest[{#NAME},{#TYPE},repo,delta]&quot;,0) /&#13;
- (last(&quot;pgbackrest[{#NAME},{#TYPE},stop]&quot;,0)-last(&quot;pgbackrest[{#NAME},{#TYPE},start]&quot;,0))</params>
+                            <params>last(&quot;pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,delta]&quot;,0) /&#13;
+ (last(&quot;pgbackrest[{#TENANT},{#NAME},{#TYPE},stop]&quot;,0)-last(&quot;pgbackrest[{#TENANT},{#NAME},{#TYPE},start]&quot;,0))</params>
                             <description>write speed for the backup piece</description>
                             <applications>
                                 <application>
@@ -447,6 +507,10 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                             <path>$.name</path>
                         </lld_macro_path>
                         <lld_macro_path>
+                            <lld_macro>{#TENANT}</lld_macro>
+                            <path>$.tenant</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
                             <lld_macro>{#TYPE}</lld_macro>
                             <path>$.type</path>
                         </lld_macro_path>
@@ -467,17 +531,73 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                             <operations>
                                 <operation>
                                     <operationobject>ITEM_PROTOTYPE</operationobject>
-                                    <value>full,arl,.*]$</value>
+                                    <operator>LIKE</operator>
+                                    <value>,full,arl,</value>
                                     <status>ENABLED</status>
                                 </operation>
                                 <operation>
                                     <operationobject>TRIGGER_PROTOTYPE</operationobject>
+                                    <operator>LIKE</operator>
                                     <value>,arl,</value>
                                     <status>ENABLED</status>
                                 </operation>
                             </operations>
                         </override>
                     </overrides>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>test.lld</name>
+                    <type>DEPENDENT</type>
+                    <key>test.lld</key>
+                    <delay>0</delay>
+                    <status>DISABLED</status>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>test_tenant[{#TENANT_NAME}]</name>
+                            <type>TRAP</type>
+                            <key>test_tenant[{#TENANT_NAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                        </item_prototype>
+                    </item_prototypes>
+                    <master_item>
+                        <key>test.json</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#TENANT_NAME}</lld_macro>
+                            <path>$.name</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.data.tenants</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>testitems.lld</name>
+                    <type>DEPENDENT</type>
+                    <key>testitems.lld</key>
+                    <delay>0</delay>
+                    <status>DISABLED</status>
+                    <master_item>
+                        <key>test.json</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#NAME}</lld_macro>
+                            <path>$.name</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.data.backups</params>
+                        </step>
+                    </preprocessing>
                 </discovery_rule>
             </discovery_rules>
             <tags>
@@ -510,4 +630,19 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
             </macros>
         </template>
     </templates>
+    <value_maps>
+        <value_map>
+            <name>pgbackrest_status</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>OK</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>ERROR</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+    </value_maps>
 </zabbix_export>
