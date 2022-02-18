@@ -11,7 +11,7 @@ Use crontab to schedule pgbackrest_zabbix.sh
 
 
 ```
-01 * * * * $HOME/bin/pgbackrest_zabbix.sh >/var/log/pgbackrest/pgbackrest_zabbix.sh.log 2>&1
+01 * * * * $HOME/bin/pgbackrest_zabbix.sh >>/var/log/pgbackrest/pgbackrest_zabbix.sh.log 2>&1
 ```
 
 

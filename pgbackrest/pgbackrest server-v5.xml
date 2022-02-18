@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2022-01-21T14:15:40Z</date>
+    <date>2022-02-17T19:22:43</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -13,7 +13,9 @@
             <name>postgres pgbackrest backup server</name>
             <description>monitoring of pgbackrest backups. Data is sent using zabbix_sender and preformatted using jq&#13;
 crontab of the pgbackrest user on the repo host[s]:&#13;
-15 *  * * * $HOME/bin/pgbackrest_zabbix.sh &gt;&gt;/var/log/pgbackrest/pgbackrest_zabbix.sh.log 2&gt;&amp;1</description>
+15 *  * * * $HOME/bin/zabbix_pgbackrest.sh &gt;&gt;/var/log/pgbackrest/zabbix_pgbackrest.sh.log 2&gt;&amp;1&#13;
+&#13;
+The items wal,(min|max) items are only enabled for the full backups.</description>
             <groups>
                 <group>
                     <name>Templates</name>
@@ -82,16 +84,6 @@ The lld rule depends on this</description>
                         <key>pgbackrest.json</key>
                     </master_item>
                 </item>
-                <item>
-                    <name>test.json</name>
-                    <type>TRAP</type>
-                    <key>test.json</key>
-                    <delay>0</delay>
-                    <history>1h</history>
-                    <trends>0</trends>
-                    <status>DISABLED</status>
-                    <value_type>TEXT</value_type>
-                </item>
             </items>
             <discovery_rules>
                 <discovery_rule>
@@ -102,7 +94,7 @@ The lld rule depends on this</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},age]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},age]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -120,9 +112,6 @@ The lld rule depends on this</description>
                                     <error_handler>DISCARD_VALUE</error_handler>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
                                     <expression>{last()} &gt; {$MAX_BKUP_AGE:&quot;{#TYPE}&quot;}</expression>
@@ -161,7 +150,7 @@ The lld rule depends on this</description>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,delta]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,delta]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -182,13 +171,10 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,size]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},db,size]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -210,13 +196,10 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,delta]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,delta]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -237,13 +220,10 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,size]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},repo,size]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -265,13 +245,10 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},start]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},start]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -293,13 +270,10 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},status]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},status]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -315,6 +289,7 @@ The lld rule depends on this</description>
                                 <step>
                                     <type>JSONPATH</type>
                                     <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].error.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
                                 </step>
                                 <step>
                                     <type>STR_REPLACE</type>
@@ -331,13 +306,23 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last()}&lt;&gt;0</expression>
+                                    <name>backup failed {#TENANT}, {#NAME}-{#TYPE}</name>
+                                    <priority>WARNING</priority>
+                                    <tags>
+                                        <tag>
+                                            <tag>backup</tag>
+                                            <value>{#TENANT}- {#NAME}-{#TYPE}</value>
+                                        </tag>
+                                    </tags>
+                                </trigger_prototype>
+                            </trigger_prototypes>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},stop]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},stop]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -359,13 +344,10 @@ The lld rule depends on this</description>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},version]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},version]</key>
                             <delay>0</delay>
                             <history>8d</history>
@@ -381,19 +363,17 @@ The lld rule depends on this</description>
                                 <step>
                                     <type>JSONPATH</type>
                                     <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].backrest.version.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
                                 </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,max]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,max]</key>
                             <delay>0</delay>
                             <history>15d</history>
@@ -410,15 +390,13 @@ The lld rule depends on this</description>
                                 <step>
                                     <type>JSONPATH</type>
                                     <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].max.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
                                 </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED</type>
                                     <params/>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                             <trigger_prototypes>
                                 <trigger_prototype>
                                     <expression>{nodata({$ARCHIVER_LATE})}=1</expression>
@@ -447,7 +425,7 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,min]</name>
-                            <type>DEPENDENT</type>
+                            <type>TRAP</type>
                             <key>pgbackrest[{#TENANT},{#NAME},{#TYPE},wal,min]</key>
                             <delay>0</delay>
                             <history>15d</history>
@@ -464,15 +442,13 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                                 <step>
                                     <type>JSONPATH</type>
                                     <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].min.first()</params>
+                                    <error_handler>DISCARD_VALUE</error_handler>
                                 </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED</type>
                                     <params/>
                                 </step>
                             </preprocessing>
-                            <master_item>
-                                <key>pgbackrest.data</key>
-                            </master_item>
                         </item_prototype>
                         <item_prototype>
                             <name>pgbackrest[{#TENANT},{#NAME},{#TYPE},wspeed]</name>
@@ -532,72 +508,18 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                                 <operation>
                                     <operationobject>ITEM_PROTOTYPE</operationobject>
                                     <operator>LIKE</operator>
-                                    <value>,full,arl,</value>
+                                    <value>,full,wal,</value>
                                     <status>ENABLED</status>
                                 </operation>
                                 <operation>
                                     <operationobject>TRIGGER_PROTOTYPE</operationobject>
                                     <operator>LIKE</operator>
-                                    <value>,arl,</value>
+                                    <value>,wal,</value>
                                     <status>ENABLED</status>
                                 </operation>
                             </operations>
                         </override>
                     </overrides>
-                </discovery_rule>
-                <discovery_rule>
-                    <name>test.lld</name>
-                    <type>DEPENDENT</type>
-                    <key>test.lld</key>
-                    <delay>0</delay>
-                    <status>DISABLED</status>
-                    <item_prototypes>
-                        <item_prototype>
-                            <name>test_tenant[{#TENANT_NAME}]</name>
-                            <type>TRAP</type>
-                            <key>test_tenant[{#TENANT_NAME}]</key>
-                            <delay>0</delay>
-                            <trends>0</trends>
-                            <value_type>TEXT</value_type>
-                        </item_prototype>
-                    </item_prototypes>
-                    <master_item>
-                        <key>test.json</key>
-                    </master_item>
-                    <lld_macro_paths>
-                        <lld_macro_path>
-                            <lld_macro>{#TENANT_NAME}</lld_macro>
-                            <path>$.name</path>
-                        </lld_macro_path>
-                    </lld_macro_paths>
-                    <preprocessing>
-                        <step>
-                            <type>JSONPATH</type>
-                            <params>$.data.tenants</params>
-                        </step>
-                    </preprocessing>
-                </discovery_rule>
-                <discovery_rule>
-                    <name>testitems.lld</name>
-                    <type>DEPENDENT</type>
-                    <key>testitems.lld</key>
-                    <delay>0</delay>
-                    <status>DISABLED</status>
-                    <master_item>
-                        <key>test.json</key>
-                    </master_item>
-                    <lld_macro_paths>
-                        <lld_macro_path>
-                            <lld_macro>{#NAME}</lld_macro>
-                            <path>$.name</path>
-                        </lld_macro_path>
-                    </lld_macro_paths>
-                    <preprocessing>
-                        <step>
-                            <type>JSONPATH</type>
-                            <params>$.data.backups</params>
-                        </step>
-                    </preprocessing>
                 </discovery_rule>
             </discovery_rules>
             <tags>
@@ -619,13 +541,8 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                 </macro>
                 <macro>
                     <macro>{$MAX_BKUP_AGE:incr}</macro>
-                    <value>2d</value>
+                    <value>50h</value>
                     <description>1d but prefer not to trigger during a large backup</description>
-                </macro>
-                <macro>
-                    <macro>{$PGBACKREST_REPO1_PATH}</macro>
-                    <value>/var/lib/bart/pgbackrest/repo1</value>
-                    <description>from /etc/pgbackup/pgbackup.conf repo1-path</description>
                 </macro>
             </macros>
         </template>

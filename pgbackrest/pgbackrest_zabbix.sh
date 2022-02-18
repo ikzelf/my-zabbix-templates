@@ -76,9 +76,24 @@ ls /etc/pgbackrest/*.conf |
 '        | jq --arg tenant "$tenant" --arg NOW "$NOW" -r 'map(.timestamp.age = ($NOW|tonumber) - .timestamp.stop)
                                                       | map(.tenant = $tenant)
 '        |
-        tee "/tmp/pgbackrest_zabbix.data.$tenant.$USER" |
-        tr "\n" " " |
-        sed "s/^/- pgbackrest.data /" |    #### add hostname + itemkey. hostname - is taken from config
+         jq '.[]|(
+if .type == "full" then
+        "pgbackrest[" + .tenant+ ","+ .name + ",full,wal,min] " + .min,
+        "pgbackrest[" + .tenant+ ","+ .name + ",full,wal,max] " + .max
+else empty end,
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",status] " + (.error|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",start] "  + (.timestamp.start|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",stop] "   + (.timestamp.stop|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",age] "    + (.timestamp.age|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",db,delta] " + (.info.delta|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",db,size] " + (.info.size|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",repo,delta] " + (.info.repository.delta|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",repo,size] " + (.info.repository.size|tostring),
+        "pgbackrest[" + .tenant+ ","+ .name + "," + .type + ",version] "  + (.backrest.version)
+        )'|
+        sed "s/] /]\" \"/"|
+        tee /tmp/zabbix_pgbackrest.data.$tenant.$USER |
+        sed "s/^/- /" |    #### hostname - is taken from config
         if [ "$DEBUG" ]
         then
             cat
