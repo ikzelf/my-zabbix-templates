@@ -105,13 +105,6 @@ The lld rule depends on this</description>
                                     <name>backup</name>
                                 </application>
                             </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].timestamp.age.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                            </preprocessing>
                             <trigger_prototypes>
                                 <trigger_prototype>
                                     <expression>{last()} &gt; {$MAX_BKUP_AGE:&quot;{#TYPE}&quot;}</expression>
@@ -162,11 +155,6 @@ The lld rule depends on this</description>
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.delta.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
                                 </step>
@@ -187,11 +175,6 @@ The lld rule depends on this</description>
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.size.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
                                 </step>
@@ -210,11 +193,6 @@ The lld rule depends on this</description>
                                 </application>
                             </applications>
                             <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.repository.delta.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
@@ -236,11 +214,6 @@ The lld rule depends on this</description>
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].info.repository.size.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
                                 </step>
@@ -260,11 +233,6 @@ The lld rule depends on this</description>
                                 </application>
                             </applications>
                             <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].timestamp.start.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
@@ -286,11 +254,6 @@ The lld rule depends on this</description>
                                 <name>pgbackrest_status</name>
                             </valuemap>
                             <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].error.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
                                 <step>
                                     <type>STR_REPLACE</type>
                                     <params>false
@@ -335,11 +298,6 @@ The lld rule depends on this</description>
                             </applications>
                             <preprocessing>
                                 <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].timestamp.stop.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
-                                <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
                                 </step>
@@ -360,11 +318,6 @@ The lld rule depends on this</description>
                                 </application>
                             </applications>
                             <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].backrest.version.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED_HEARTBEAT</type>
                                     <params>1d</params>
@@ -387,11 +340,6 @@ The lld rule depends on this</description>
                                 </application>
                             </applications>
                             <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].max.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED</type>
                                     <params/>
@@ -439,11 +387,6 @@ the arl items are disabled and only enabled for full,arl,(min|max)</description>
                                 </application>
                             </applications>
                             <preprocessing>
-                                <step>
-                                    <type>JSONPATH</type>
-                                    <params>$.[?(@.name==&quot;{#NAME}&quot; &amp;&amp; @.type==&quot;{#TYPE}&quot; &amp;&amp; @.tenant==&quot;{#TENANT}&quot;)].min.first()</params>
-                                    <error_handler>DISCARD_VALUE</error_handler>
-                                </step>
                                 <step>
                                     <type>DISCARD_UNCHANGED</type>
                                     <params/>
